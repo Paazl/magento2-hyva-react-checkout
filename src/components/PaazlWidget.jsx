@@ -1,44 +1,50 @@
-import React, { useEffect } from 'react';
-import paazlConfigurationRequest from '../api/paazlConfiguration';
-import usePaazlAppContext from '../hooks/usePaazlAppContext';
-import PaazlConfig from '../utility/config';
+import React, { useState, useEffect } from 'react';
 import useCartContext from '../hooks/useCartContext';
+import usePaazlCheckout from '../hooks/usePaazlCheckout';
+import usePaazlMethodChanged from '../hooks/usePaazlMethodChanged';
 
 function PaazlWidget() {
-  const cartContext = useCartContext();
+  const { cartShippingAddress, cartActions } = useCartContext();
+  const [paazlCheckout, setPaazlCheckout] = useState(false);
+  const [currentData, setCurrentData] = useState(false);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://widget.paazl.com/v1/checkout.js';
-    if (!PaazlConfig.isProduction) {
-      script.src = 'https://widget-acc.paazl.com/v1/checkout.js';
+  usePaazlCheckout(setPaazlCheckout);
+  usePaazlMethodChanged(paazlCheckout, (data) => {
+    // Method changed so update the cart/totals.
+    if (data === currentData) {
+      return;
     }
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
+
+    setCurrentData(data);
+    cartActions
+      .setShippingMethod({
+        carrierCode: 'paazlshipping',
+        methodCode: 'paazlshipping',
+      })
+      .then(() => cartActions.getCustomerCartInfo);
+  });
 
   useEffect(() => {
-    const callback = async () => {
-      const paazlConfigurationResult = await paazlConfigurationRequest(
-        usePaazlAppContext.appDispatch
-      );
+    if (!paazlCheckout || !cartShippingAddress.country) {
+      return;
+    }
 
-      paazlConfigurationResult.consigneePostalCode =
-        cartContext.cartShippingAddress.postcode ||
-        paazlConfigurationResult.consigneePostalCode;
+    // eslint-disable-next-line prettier/prettier
+    paazlCheckout.setConsigneeCountryCode( // eslint-disable-line no-undef
+      cartShippingAddress.country
+    );
+  }, [paazlCheckout, cartShippingAddress.country]);
 
-      paazlConfigurationResult.consigneeCountryCode =
-        cartContext.cartShippingAddress.country ||
-        paazlConfigurationResult.consigneeCountryCode;
+  useEffect(() => {
+    if (!paazlCheckout || !cartShippingAddress.postcode) {
+      return;
+    }
 
-      PaazlCheckout.init(paazlConfigurationResult); // eslint-disable-line no-undef
-    };
-
-    callback();
-  }, [
-    cartContext.cartShippingAddress.postcode,
-    cartContext.cartShippingAddress.country,
-  ]);
+    // eslint-disable-next-line prettier/prettier
+    paazlCheckout.setConsigneePostalCode( // eslint-disable-line no-undef
+      cartShippingAddress.postcode
+    );
+  }, [paazlCheckout, cartShippingAddress.postcode]);
 
   return <div id="widget_paazlshipping_paazlshipping" className="w-full" />;
 }
