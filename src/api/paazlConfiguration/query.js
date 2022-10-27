@@ -41,6 +41,7 @@ query paazlConfiguration($cartId: String!) {
     pickupLocationsPageLimit
     pickupLocationsLimit
     initialPickupLocations
+    language
   }
 }
 `;
