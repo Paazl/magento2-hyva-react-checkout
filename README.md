@@ -31,7 +31,7 @@ To:
 ```diff
 "config": {
   "shippingMethodsRepo": {
-    "paazl": "git@github.com:magmodules/paazl-development-hyva-react-checkout"
+    "paazl": "git@github.com:Paazl/magento2-hyva-react-checkout.git"
   },
   "paymentMethodsRepo": "Add your payment methods here"
 },
